@@ -16,7 +16,10 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path
 
+from logistic.views import envire_check
+
 urlpatterns = [
+    path('', envire_check),
     path('admin/', admin.site.urls),
     path('api/v1/', include('logistic.urls')),
 ]

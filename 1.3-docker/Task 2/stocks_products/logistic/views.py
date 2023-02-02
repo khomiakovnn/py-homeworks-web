@@ -1,3 +1,6 @@
+import os
+
+from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter
 from rest_framework.viewsets import ModelViewSet
@@ -19,4 +22,7 @@ class StockViewSet(ModelViewSet):
     serializer_class = StockSerializer
     filter_backends = [DjangoFilterBackend, ]
     filterset_fields = ['positions', ]
+
+def envire_check(request):
+    return HttpResponse(f"Переменная окружения = {os.environ['MyENV']}")
 
