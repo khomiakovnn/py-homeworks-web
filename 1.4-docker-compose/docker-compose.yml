@@ -1,0 +1,23 @@
+version: '3.3'
+
+services:
+  web:
+    build: ./Backend
+    command: gunicorn stocks_products.wsgi:application --bind 0.0.0.0:8000
+    expose:
+      - 8000
+    depends_on:
+      - db 
+  db:
+    build: ./Postgres
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=Qwerty11
+      - POSTGRES_DB=netology_docker
+
+  nginx:
+     build: ./Nginx
+     ports:
+      - 1337:80
+     depends_on:
+      - web

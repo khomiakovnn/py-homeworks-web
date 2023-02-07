@@ -1,0 +1,12 @@
+[Unit]
+Description=gunicorn daemon
+Requires=gunicorn.socket
+After=network.target
+
+[Service]
+User=root
+WorkingDirectory=/site/stocks_products
+ExecStart=etc/bin/gunicorn --workers 3 --bind unix:/run/gunicorn.sock /site/stocks_products.wsgi:application
+
+[Install]
+WantedBy=multi-user.target
