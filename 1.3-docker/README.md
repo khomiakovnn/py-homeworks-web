@@ -1,6 +1,6 @@
 # Домашнее задание к лекции «Docker»
 
-## [Задание 1](./Task1)
+## [Задание 1](https://github.com/khomiakovnn/py-homeworks-web/tree/main/1.3-docker/Task%201)
 
 * Dockerfile в корне
 * index.html приложен в отдельной папке html
@@ -10,7 +10,7 @@
 2. docker run -d -p 8000:80 --rm nginx_new_welcompage
 3. curl localhost:8000
 
-## [Задание 2](./Task2)
+## [Задание 2](https://github.com/khomiakovnn/py-homeworks-web/tree/main/1.3-docker/Task%202)
 
 * Dockerfile в корне
 * Папка проекта CRUD приложена
