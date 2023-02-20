@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, request
 from flask.views import MethodView
-from db import Advertisement, Session
+from db import Advertisement, Session  # User
 from schema import validate_adv_create
 from errors import HttpError
 
@@ -19,6 +19,21 @@ def get_adv(adv_id: int, session: Session):
     if advert is None:
         raise HttpError(404, 'Advert have not been found')
     return advert
+
+
+# class UserView(MethodView):
+#
+#     def get(self):
+#         pass
+#
+#     def post(self):
+#         pass
+#
+#     def patch(self):
+#         pass
+#
+#     def delete(self):
+#         pass
 
 
 class AdvertView(MethodView):
@@ -76,8 +91,16 @@ app.add_url_rule('/api/adverts/<int:adv_id>/',
                  methods=['GET', 'PATCH', 'DELETE'])
 
 app.add_url_rule('/api/adverts/',
-                 view_func=AdvertView.as_view('no_id'),
+                 view_func=AdvertView.as_view('adv_no_id'),
                  methods=['GET', 'POST'])
+
+# app.add_url_rule('/api/users/<int:adv_id>/',
+#                  view_func=UserView.as_view('user_id'),
+#                  methods=['GET', 'PATCH', 'DELETE'])
+#
+# app.add_url_rule('/api/users/',
+#                  view_func=UserView.as_view('user_no_id'),
+#                  methods=['GET', 'POST'])
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=5000)

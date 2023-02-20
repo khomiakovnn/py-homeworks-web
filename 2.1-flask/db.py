@@ -16,7 +16,7 @@ atexit.register(engine.dispose)
 #     id = Column(Integer, primary_key=True, autoincrement=True)
 #     username = Column(String, nullable=False, unique=True, index=True)
 #     password = Column(String, nullable=False)
-#     created_at = Column(DateTime, server_default=func.now())
+#     email = Column(String, nullable=False)
 
 
 class Advertisement(Base):
