@@ -6,21 +6,36 @@ from errors import HttpError
 
 app = Flask('server')
 
+
 @app.errorhandler(HttpError)
 def error_handler(error):
     http_response = jsonify({'status': 'error', 'description': error.message})
     http_response.status_code = error.status_code
     return http_response
 
+
+def get_adv(adv_id: int, session: Session):
+    advert = session.query(Advertisement).get(adv_id)
+    if advert is None:
+        raise HttpError(404, 'Advert have not been found')
+    return advert
+
+
 class AdvertView(MethodView):
 
     def get(self, adv_id: int):
-        print(adv_id)
-        return jsonify({'HTTP_method': 'get'})
+        with Session() as session:
+            advert = get_adv(adv_id, session)
+            return jsonify({
+                'id': advert.id,
+                'title': advert.title,
+                'description': advert.description,
+                'created_at': advert.created_at,
+                'author': advert.author,
+            })
 
     def post(self):
         json_data = validate_adv_create(request.json)
-        print(json_data)
         with Session() as session:
             new_adv = Advertisement(**json_data)
             session.add(new_adv)
@@ -34,14 +49,26 @@ class AdvertView(MethodView):
 
     def patch(self, adv_id: int):
         json_data = request.json
-        token = request.headers.get('token')
-        print(adv_id, json_data, token)
-        return jsonify({'HTTP_method': 'patch'})
+        with Session() as session:
+            advert = get_adv(adv_id, session)
+            for field, value in json_data.items():
+                setattr(advert, field, value)
+            session.add(advert)
+            session.commit()
+        return jsonify({
+            'HTTP_method': 'patch',
+            'Status': 'Advert have been patched',
+        })
 
     def delete(self, adv_id: int):
-        token = request.headers.get('token')
-        print(adv_id, token)
-        return jsonify({'HTTP_method': 'delete'})
+        with Session() as session:
+            advert = get_adv(adv_id, session)
+            session.delete(advert)
+            session.commit()
+        return jsonify({
+            'HTTP_method': 'delete',
+            'Status': 'Advert have been deleted',
+        })
 
 
 app.add_url_rule('/api/adverts/<int:adv_id>/',
