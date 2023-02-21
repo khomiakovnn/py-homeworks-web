@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, request
 from flask.views import MethodView
-from db import Advertisement, Session  # User
-from schema import validate_adv_create
+from db import Advertisement, Session, User
+from schema import validate_adv_create, validate_user_create
 from errors import HttpError
 
 app = Flask('server')
@@ -21,19 +21,54 @@ def get_adv(adv_id: int, session: Session):
     return advert
 
 
-# class UserView(MethodView):
-#
-#     def get(self):
-#         pass
-#
-#     def post(self):
-#         pass
-#
-#     def patch(self):
-#         pass
-#
-#     def delete(self):
-#         pass
+def get_user(user_id: int, session: Session):
+    user = session.query(User).get(user_id)
+    if user is None:
+        raise HttpError(404, 'User have not been found')
+    return user
+
+
+class UserView(MethodView):
+
+    def get(self, user_id: int):
+
+        with Session() as session:
+            user = get_user(user_id, session)
+            return jsonify({
+                'id': user.id,
+                'username': user.username,
+                'password': user.password,
+                'email': user.email,
+                'creation_time': int(user.created_at.timestamp()),
+            })
+
+    def post(self):
+        json_data = validate_user_create(request.json)
+        with Session() as session:
+            new_user = User(**json_data)
+            session.add(new_user)
+            session.commit()
+            return jsonify(
+                {
+                    'id': new_user.id,
+                    'username': new_user.username,
+                    'password': new_user.password,
+                    'email': new_user.email,
+                    'creation_time': int(new_user.created_at.timestamp()),
+                }
+            )
+
+    def patch(self, user_id: int):
+        return jsonify({
+            'HTTP_method': 'PATCH',
+            'Status': 'OK',
+        })
+
+    def delete(self, user_id: int):
+        return jsonify({
+            'HTTP_method': 'DELETE',
+            'Status': 'OK',
+        })
 
 
 class AdvertView(MethodView):
@@ -94,13 +129,13 @@ app.add_url_rule('/api/adverts/',
                  view_func=AdvertView.as_view('adv_no_id'),
                  methods=['GET', 'POST'])
 
-# app.add_url_rule('/api/users/<int:adv_id>/',
-#                  view_func=UserView.as_view('user_id'),
-#                  methods=['GET', 'PATCH', 'DELETE'])
-#
-# app.add_url_rule('/api/users/',
-#                  view_func=UserView.as_view('user_no_id'),
-#                  methods=['GET', 'POST'])
+app.add_url_rule('/api/users/<int:user_id>/',
+                 view_func=UserView.as_view('user_id'),
+                 methods=['GET', 'PATCH', 'DELETE'])
+
+app.add_url_rule('/api/users/',
+                 view_func=UserView.as_view('user_no_id'),
+                 methods=['GET', 'POST'])
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=5000)
