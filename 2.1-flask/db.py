@@ -30,4 +30,4 @@ class Advertisement(Base):
 
 
 # Base.metadata.drop_all(bind=engine)  # для очистки таблиц при отладке кода
-Base.metadata.create_all(bind=engine)
+Base.   metadata.create_all(bind=engine)

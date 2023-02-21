@@ -1,17 +1,24 @@
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ValidationError, validator
 from errors import HttpError
 
 
 class CreateAdv(BaseModel):
     title: str
     description: str
-    author: str
+    author: int
 
 
 class CreateUser(BaseModel):
+
     username: str
     password: str
     email: str
+
+    @validator('password')
+    def validate_password(cls, value: str):
+        if len(value) < 3:
+            raise ValueError('Password is less then 3 symbols')
+        return value
 
 
 def validate_adv_create(json_data):

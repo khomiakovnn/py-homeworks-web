@@ -1,11 +1,14 @@
 from flask import Flask, jsonify, request
 from flask.views import MethodView
+from flask_bcrypt import Bcrypt
+from sqlalchemy.exc import IntegrityError
+
 from db import Advertisement, Session, User
 from schema import validate_adv_create, validate_user_create
 from errors import HttpError
 
 app = Flask('server')
-
+bcrypt = Bcrypt(app)
 
 @app.errorhandler(HttpError)
 def error_handler(error):
@@ -44,30 +47,45 @@ class UserView(MethodView):
 
     def post(self):
         json_data = validate_user_create(request.json)
+        json_data['password'] = bcrypt.generate_password_hash(json_data['password'].encode()).decode()
         with Session() as session:
             new_user = User(**json_data)
             session.add(new_user)
-            session.commit()
+            try:
+                session.commit()
+            except IntegrityError:
+                raise HttpError(409, 'User already exist')
             return jsonify(
                 {
                     'id': new_user.id,
                     'username': new_user.username,
-                    'password': new_user.password,
+                    'password': new_user.password,  # Для проверки работоспособности
                     'email': new_user.email,
                     'creation_time': int(new_user.created_at.timestamp()),
                 }
             )
 
     def patch(self, user_id: int):
-        return jsonify({
-            'HTTP_method': 'PATCH',
-            'Status': 'OK',
-        })
+        json_data = request.json
+        with Session() as session:
+            user = get_user(user_id, session)
+            for field, value in json_data.items():
+                setattr(user, field, value)
+            session.add(user)
+            session.commit()
+            return jsonify({
+                'HTTP_method': 'patch',
+                'Status': 'User have been patched',
+            })
 
     def delete(self, user_id: int):
+        with Session() as session:
+            user = get_user(user_id, session)
+            session.delete(user)
+            session.commit()
         return jsonify({
-            'HTTP_method': 'DELETE',
-            'Status': 'OK',
+            'HTTP_method': 'delete',
+            'Status': 'User have been deleted',
         })
 
 
@@ -86,7 +104,11 @@ class AdvertView(MethodView):
 
     def post(self):
         json_data = validate_adv_create(request.json)
+        author = json_data['author']
         with Session() as session:
+            user = session.query(User).get(author)
+            if user is None:
+                raise HttpError(404, 'User have not been found')
             new_adv = Advertisement(**json_data)
             session.add(new_adv)
             session.commit()
@@ -101,6 +123,8 @@ class AdvertView(MethodView):
         json_data = request.json
         with Session() as session:
             advert = get_adv(adv_id, session)
+            if advert.author != json_data['author']:
+                raise HttpError(401, 'You do not have rights to this operation')
             for field, value in json_data.items():
                 setattr(advert, field, value)
             session.add(advert)
@@ -111,8 +135,11 @@ class AdvertView(MethodView):
         })
 
     def delete(self, adv_id: int):
+        json_data = request.json
         with Session() as session:
             advert = get_adv(adv_id, session)
+            if advert.author != json_data['author']:
+                raise HttpError(401, 'You do not have rights to this operation')
             session.delete(advert)
             session.commit()
         return jsonify({
