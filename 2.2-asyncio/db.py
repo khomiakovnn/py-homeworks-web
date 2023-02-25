@@ -17,18 +17,18 @@ class People(Base):
     id = Column(Integer)
     birth_year = Column(String)
     eye_color = Column(String)
-    films = Column(String)  # строка с названиями фильмов через запятую
+    films = Column(String)
     gender = Column(String)
     hair_color = Column(String)
-    height = Column(Integer)
+    height = Column(String)
     homeworld = Column(String)
-    mass = Column(Integer)
+    mass = Column(String)
     name = Column(String)
     skin_color = Column(String)
-    species = Column(String)  # строка с названиями типов через запятую
-    starships = Column(String)  # строка с названиями кораблей через запятую
-    vehicles = Column(String)  # строка с названиями транспорта через запятую
+    species = Column(String)
+    starships = Column(String)
+    vehicles = Column(String)
 
 
-# Base.metadata.drop_all(bind=engine)  # для очистки таблиц при отладке кода
+Base.metadata.drop_all(bind=engine)  # для очистки таблиц при отладке кода
 Base.metadata.create_all(bind=engine)
