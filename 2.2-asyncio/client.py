@@ -1,58 +1,93 @@
+import asyncio
+import aiohttp
 import requests
 from datetime import datetime
 
 from db import Session, People
 
 
-def get_names(links, name_inst):
-    result = []
-    for link in links:
-        response = requests.get(link).json()[name_inst]
-        result.append(response)
-    return ', '.join(result)
+async def get_names(links, name_inst, session):
+    """
+    Собирает имена субстанций по их ссылке и наименованию
+    """
+    coros = []
+    for url in links:
+        response = get_data(url, session)
+        coros.append(response)
+    result = await asyncio.gather(*coros)
+    results = []
+    for item in result:
+        results.append(item[name_inst])
+    return ', '.join(results)
 
 
-def main():
-    start_time = datetime.now()
-
+def get_count():
+    """
+    Выясняет количество персонажей
+    """
     url = "https://swapi.dev/api/people/"
     quantity = requests.get(url).json()['count']
     print(f'Найдено персонажей - {quantity}')
+    return quantity
 
+
+async def get_data(url, session):
+    """
+    Собирает все данные со страницы
+    """
+    response = await session.get(url)
+    response_json = await response.json()
+    return response_json
+
+
+def bd_update(person):
+    """
+    Записывает персонажа в БД
+    """
     with Session() as session:
-        finded = 0
-        person_id = 1
-        while finded < quantity:
-            url = f'https://swapi.dev/api/people/{person_id}/'
-            querry_time = datetime.now()
-            response = requests.get(url)
-            if response.status_code == 200:
-                finded += 1
-                person = {
-                    'id': person_id,
-                    'birth_year': response.json()['birth_year'],
-                    'eye_color': response.json()['eye_color'],
-                    'films': get_names(response.json()['films'], 'title'),
-                    'gender': response.json()['gender'],
-                    'hair_color': response.json()['hair_color'],
-                    'height': response.json()['height'],
-                    'homeworld': requests.get(response.json()['homeworld']).json()['name'],
-                    'mass': response.json()['mass'],
-                    'name': response.json()['name'],
-                    'skin_color': response.json()['skin_color'],
-                    'species': get_names(response.json()['species'], 'name'),
-                    'starships': get_names(response.json()['starships'], 'name'),
-                    'vehicles': get_names(response.json()['vehicles'], 'name'),
-                }
-                new_person = People(**person)
-                session.add(new_person)
-                session.commit()
-                print(f'Обработано {finded} из {quantity}. Время запроса: {datetime.now() - querry_time}')
-            person_id += 1
+        new_person = People(**person)
+        session.add(new_person)
+        session.commit()
 
 
-    print(datetime.now() - start_time)
+async def main():
+    # Собираем количество объектов
+    pagination = get_count() // 10 + 1
 
+    session = aiohttp.ClientSession()
+    # Собираем корутины для запроса страниц пагинации
+    coros_pagi = []
+    for i in range(1, pagination + 1):
+        url = f"https://swapi.dev/api/people/?page={i}"
+        coroutine = get_data(url, session)
+        coros_pagi.append(coroutine)
+    result_pagi = await asyncio.gather(*coros_pagi)
+    print("Собрали данные со страниц пагинации", len(result_pagi))
+
+    # Собираем персонаж
+    for page in result_pagi:
+        for instance in page['results']:
+            person = {
+                'id': int(instance['url'][29:-1]),
+                'birth_year': instance['birth_year'],
+                'eye_color': instance['eye_color'],
+                'films': await get_names(instance['films'], 'title', session),
+                'gender': instance['gender'],
+                'hair_color': instance['hair_color'],
+                'height': instance['height'],
+                'homeworld': instance['name'],
+                'mass': instance['mass'],
+                'name': instance['name'],
+                'skin_color': instance['skin_color'],
+                'species': await get_names(instance['species'], 'name', session),
+                'starships': await get_names(instance['starships'], 'name', session),
+                'vehicles': await get_names(instance['vehicles'], 'name', session),
+            }
+            bd_update(person)
+            print("Добавлен персонаж")
+    await session.close()
 
 if __name__ == '__main__':
-    main()
+    start_time = datetime.now()
+    asyncio.run(main())
+    print(datetime.now() - start_time)
