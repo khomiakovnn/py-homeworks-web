@@ -1,6 +1,7 @@
-aiohttp
+aiohttp[speedups]
+bcrypt
 cchardet
 aiodns
-sqlalchemy
-psycopg2-binary
+sqlalchemy==1.4.46
+asyncpg
 pydantic

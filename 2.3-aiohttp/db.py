@@ -1,14 +1,13 @@
-import atexit
-from sqlalchemy import Column, String, Integer, DateTime, create_engine, func, ForeignKey
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy import Column, String, Integer, DateTime, func, ForeignKey
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
-PG_DSN = 'postgresql://postgres:Qwerty11@127.0.0.1:5432/aiohttp_test'
-engine = create_engine(PG_DSN)
+PG_DSN = 'postgresql+asyncpg://postgres:Qwerty11@127.0.0.1:5432/aiohttp_test'
+engine = create_async_engine(PG_DSN)
 
 Base = declarative_base()
-Session = sessionmaker(bind=engine)
-
-atexit.register(engine.dispose)  # Закрываем подключение при выходе
+Session = sessionmaker(bind=engine, expire_on_commit=False, class_=AsyncSession)
 
 
 class User(Base):
@@ -30,4 +29,4 @@ class Advertisement(Base):
 
 
 # Base.metadata.drop_all(bind=engine)  # для очистки таблиц при отладке кода
-Base.   metadata.create_all(bind=engine)
+# Base.metadata.create_all(bind=engine)
